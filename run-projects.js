@@ -5,13 +5,13 @@ concurrently([
   {
     command: 'node server.js',
     name: 'terminal-command-runner',
-    cwd: path.resolve(__dirname, '../terminal-command-runner'),
+    cwd: path.resolve(__dirname, './terminal-command-runner'),
     prefixColor: 'blue'
   },
   {
     command: 'npm run start',
     name: 'ws-scrcpy',
-    cwd: path.resolve(__dirname, '../ws-scrcpy'),
+    cwd: path.resolve(__dirname, './ws-scrcpy'),
     prefixColor: 'green'
   }
 ], {

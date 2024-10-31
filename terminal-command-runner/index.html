@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Terminal Command Runner</title>
+    <script>
+        // Function to run command
+        function runCommand() {
+            const command = encodeURIComponent(document.getElementById('command').value);
+            const device = encodeURIComponent(document.getElementById('deviceInput').value);
+            fetch(`http://localhost:7173/run-command?command=${command}&device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to run command');
+                console.error('Error:', error);
+            });
+        }
+        
+        // Function to get device list
+        function getDeviceList() {
+            fetch('http://localhost:7173/get-device-list')
+                .then(response => response.json())
+                .then(devices => {
+                    document.getElementById('output').innerText = devices.join('\n');
+                })
+                .catch(error => {
+                    alert('Failed to get device list');
+                    console.error('Error:', error);
+                });
+        }
+
+        function tap(x, y, device) {
+            fetch(`http://localhost:7173/tap?x=${x}&y=${y}&device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to execute tap');
+                console.error('Error:', error);
+            });
+        }
+
+        function swipe(xPoint1, yPoint1, xPoint2, yPoint2, durationInMs, device) {
+            fetch(`http://localhost:7173/swipe?xPoint1=${xPoint1}&yPoint1=${yPoint1}&xPoint2=${xPoint2}&yPoint2=${yPoint2}&durationInMs=${durationInMs}&device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to execute swipe');
+                console.error('Error:', error);
+            });
+        }
+
+        function typeText(text, device) {
+            fetch(`http://localhost:7173/type?text=${encodeURIComponent(text)}&device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to type text');
+                console.error('Error:', error);
+            });
+        }
+
+        function takeScreenshot(device) {
+            fetch(`http://localhost:7173/screenshot?device=${device}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const img = document.createElement('img');
+                    img.src = 'data:image/png;base64,' + data.imageData;
+                    document.getElementById('output').innerHTML = '';
+                    document.getElementById('output').appendChild(img);
+                } else {
+                    document.getElementById('output').innerText = 'Failed to take screenshot: ' + data.error;
+                }
+            })
+            .catch(error => {
+                alert('Failed to take screenshot');
+                console.error('Error:', error);
+            });
+        }
+
+        function dumpWindowXML(device) {
+            fetch(`http://localhost:7173/dump-window-xml?device=${device}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const formattedXML = formatXML(data.xmlData);
+                    const escapedXML = escapeHTML(formattedXML);
+                    const styledXML = `
+                        <div style="font-family: monospace; white-space: pre-wrap; background-color: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 500px; overflow-y: auto;">
+                            ${escapedXML}
+                        </div>
+                    `;
+                    document.getElementById('output').innerHTML = styledXML;
+                } else {
+                    document.getElementById('output').innerText = 'Failed to dump window XML: ' + data.error;
+                }
+            })
+            .catch(error => {
+                alert('Failed to dump window XML');
+                console.error('Error:', error);
+            });
+        }
+
+        function findNearestNodeAtCoordinatesFromDump(x, y, device) {
+            fetch(`http://localhost:7173/find-nearest-node?x=${x}&y=${y}&device=${device}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const formattedNode = JSON.stringify(data.node, null, 2);
+                    const styledNode = `
+                        <div style="font-family: monospace; white-space: pre-wrap; background-color: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 500px; overflow-y: auto;">
+                            ${escapeHTML(formattedNode)}
+                        </div>
+                    `;
+                    document.getElementById('output').innerHTML = styledNode;
+                } else {
+                    document.getElementById('output').innerText = 'Failed to find nearest node: ' + data.error;
+                }
+            })
+            .catch(error => {
+                alert('Failed to find nearest node');
+                console.error('Error:', error);
+            });
+        }
+
+        function escapeHTML(str) {
+            return str.replace(/[&<>'"]/g, 
+                tag => ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    "'": '&#39;',
+                    '"': '&quot;'
+                }[tag] || tag)
+            );
+        }
+
+        function formatXML(xml) {
+            let formatted = '';
+            let indent = '';
+            const tab = '    ';
+            xml.split(/>\s*</).forEach(function(node) {
+                if (node.match( /^\/\w/ )) {
+                    indent = indent.substring(tab.length);
+                }
+                formatted += indent + '<' + node + '>\r\n';
+                if (node.match( /^<?\w[^>]*[^\/]$/ )) {
+                    indent += tab;
+                }
+            });
+            return formatted.substring(1, formatted.length-3);
+        }
+
+        function existsInDump(query, prop) {
+            fetch(`http://localhost:7173/exists-in-dump?query=${encodeURIComponent(query)}&prop=${encodeURIComponent(prop)}`)
+            .then(response => response.json())
+            .then(result => {
+                document.getElementById('output').innerText = result ? 'Exists' : 'Does not exist';
+            })
+            .catch(error => {
+                alert('Failed to check existence in dump');
+                console.error('Error:', error);
+            });
+        }
+
+        function getResolution(device) {
+            fetch(`http://localhost:7173/get-resolution?device=${device}`)
+            .then(response => response.json())
+            .then(resolution => {
+                document.getElementById('output').innerText = `Width: ${resolution.width}, Height: ${resolution.height}`;
+            })
+            .catch(error => {
+                alert('Failed to get resolution');
+                console.error('Error:', error);
+            });
+        }
+
+        function listInstalledApps(device) {
+            fetch(`http://localhost:7173/list-installed-apps?device=${device}`)
+            .then(response => response.json())
+            .then(apps => {
+                document.getElementById('output').innerText = apps.result.join('\n');
+            })
+            .catch(error => {
+                alert('Failed to list installed apps');
+                console.error('Error:', error);
+            });
+        }
+
+        function checkAppExists(appPackageName, device) {
+            fetch(`http://localhost:7173/app-exists?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
+            .then(response => response.json())
+            .then(exists => {
+                document.getElementById('output').innerText = exists ? 'App exists' : 'App does not exist';
+            })
+            .catch(error => {
+                alert('Failed to check if app exists');
+                console.error('Error:', error);
+            });
+        }
+
+        function clearAppCache(appPackageName, device) {
+            fetch(`http://localhost:7173/clear-app-cache?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to clear app cache');
+                console.error('Error:', error);
+            });
+        }
+
+        function openApp(appPackageName, device) {
+            fetch(`http://localhost:7173/open-app?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to open app');
+                console.error('Error:', error);
+            });
+        }
+
+        function installApp(appPath, device) {
+            fetch(`http://localhost:7173/install-app?appPath=${encodeURIComponent(appPath)}&device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to install app');
+                console.error('Error:', error);
+            });
+        }
+
+        function goToHome(device) {
+            fetch(`http://localhost:7173/go-to-home?device=${device}`)
+            .then(response => response.text())
+            .then(output => {
+                document.getElementById('output').innerText = output;
+            })
+            .catch(error => {
+                alert('Failed to go to home');
+                console.error('Error:', error);
+            });
+        }
+
+        function connectDevice(device) {
+            fetch(`http://localhost:7173/connect-device?device=${device}`)
+            .then(response => response.json())
+            .then(connected => {
+                document.getElementById('output').innerText = connected ? 'Device connected' : 'Failed to connect device';
+            })
+            .catch(error => {
+                alert('Failed to connect device');
+                console.error('Error:', error);
+            });
+        }
+
+        function getBatteryDetails(device) {
+            fetch(`http://localhost:7173/get-battery-details?device=${device}`)
+            .then(response => response.json())
+            .then(details => {
+                document.getElementById('output').innerText = JSON.stringify(details, null, 2);
+            })
+            .catch(error => {
+                alert('Failed to get battery details');
+                console.error('Error:', error);
+            });
+        }
+
+        function serviceCheck(service, device) {
+            fetch(`http://localhost:7173/service-check?service=${encodeURIComponent(service)}&device=${device}`)
+            .then(response => response.json())
+            .then(exists => {
+                document.getElementById('output').innerText = exists ? 'Service exists' : 'Service does not exist';
+            })
+            .catch(error => {
+                alert('Failed to check service');
+                console.error('Error:', error);
+            });
+        }
+
+        function findNodeByXPath(xpath, device) {
+            fetch(`http://localhost:7173/find-node-by-xpath?xpath=${encodeURIComponent(xpath)}&device=${device}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const formattedNode = JSON.stringify(data.result, null, 2);
+                    const styledNode = `
+                        <div style="font-family: monospace; white-space: pre-wrap; background-color: #f0f0f0; padding: 10px; border-radius: 5px; max-height: 500px; overflow-y: auto;">
+                            ${escapeHTML(formattedNode)}
+                        </div>
+                    `;
+                    document.getElementById('output').innerHTML = styledNode;
+                } else {
+                    document.getElementById('output').innerText = 'Failed to find node by XPath: ' + data.error;
+                }
+            })
+            .catch(error => {
+                alert('Failed to find node by XPath');
+                console.error('Error:', error);
+            });
+        }
+
+        function getCurrentInputText(device) {
+            fetch(`http://localhost:7173/get-current-input-text?device=${device}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('output').innerText = `Current Input Text: ${data.result}`;
+                } else {
+                    document.getElementById('output').innerText = 'Failed to get current input text: ' + data.error;
+                }
+            })
+            .catch(error => {
+                alert('Failed to get current input text');
+                console.error('Error:', error);
+            });
+        }
+
+        function clearCurrentInput(device, currentText = '') {
+            const url = new URL('http://localhost:7173/clear-current-input');
+            url.searchParams.append('device', device);
+            if (currentText) {
+                url.searchParams.append('currentText', currentText);
+            }
+
+            fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('output').innerText = data.result;
+                } else {
+                    document.getElementById('output').innerText = 'Failed to clear current input: ' + data.error;
+                }
+            })
+            .catch(error => {
+                alert('Failed to clear current input');
+                console.error('Error:', error);
+            });
+        }
+
+        function screenAwake(device, isOn) {
+            fetch(`http://localhost:7173/screen-awake?device=${device}&isOn=${isOn}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('output').innerText = isOn ? 'Screen set to stay on' : 'Screen set to normal behavior';
+                    document.getElementById('screenAwakeToggle').innerText = isOn ? 'Turn Off Keep Screen On' : 'Keep Screen On';
+                } else {
+                    document.getElementById('output').innerText = 'Failed to change screen awake setting: ' + data.error;
+                }
+            })
+            .catch(error => {
+                alert('Failed to change screen awake setting');
+                console.error('Error:', error);
+            });
+        }
+
+        function toggleScreenAwake() {
+            const device = document.getElementById('deviceInput').value;
+            const button = document.getElementById('screenAwakeToggle');
+            const isCurrentlyOn = button.innerText === 'Turn Off Keep Screen On';
+            screenAwake(device, !isCurrentlyOn);
+        }
+    </script>
+</head>
+<body>
+    <h1>Terminal Command Runner</h1>
+    <div>
+        <h3>Run Command</h3>
+        <input type="text" id="command" placeholder="Enter your command"><br><br>
+        <button onclick="runCommand()">Run Terminal Command</button>
+        <button onclick="getDeviceList()">Get Device List</button>
+    </div>
+    <div>
+        <h3>Device Control</h3>
+        <input type="text" id="deviceInput" placeholder="Device ID (optional)">
+        <button onclick="getDeviceList()">Get Device List</button>
+        <button onclick="connectDevice(document.getElementById('deviceInput').value)">Connect Device</button>
+        <button onclick="goToHome(document.getElementById('deviceInput').value)">Go To Home</button>
+        <button onclick="getResolution(document.getElementById('deviceInput').value)">Get Resolution</button>
+        <button id="screenAwakeToggle" onclick="toggleScreenAwake()">Keep Screen On</button>
+    </div>
+
+    <div>
+        <h3>Touch Actions</h3>
+        <input type="number" id="tapX" placeholder="X coordinate">
+        <input type="number" id="tapY" placeholder="Y coordinate">
+        <button onclick="tap(document.getElementById('tapX').value, document.getElementById('tapY').value, document.getElementById('deviceInput').value)">Tap</button>
+        
+        <input type="number" id="swipeX1" placeholder="Start X">
+        <input type="number" id="swipeY1" placeholder="Start Y">
+        <input type="number" id="swipeX2" placeholder="End X">
+        <input type="number" id="swipeY2" placeholder="End Y">
+        <input type="number" id="swipeDuration" placeholder="Duration (ms)">
+        <button onclick="swipe(document.getElementById('swipeX1').value, document.getElementById('swipeY1').value, document.getElementById('swipeX2').value, document.getElementById('swipeY2').value, document.getElementById('swipeDuration').value, document.getElementById('deviceInput').value)">Swipe</button>
+    </div>
+
+    <div>
+        <h3>Text Input</h3>
+        <input type="text" id="textInput" placeholder="Text to type">
+        <button onclick="typeText(document.getElementById('textInput').value, document.getElementById('deviceInput').value)">Type Text</button>
+    </div>
+
+    <div>
+        <h3>Screen Capture</h3>
+        <input type="text" id="screenshotFilename" placeholder="Screenshot filename">
+        <button onclick="takeScreenshot(document.getElementById('deviceInput').value)">Take Screenshot</button>
+        <button onclick="dumpWindowXML(document.getElementById('deviceInput').value)">Dump Window XML</button>
+    </div>
+
+    <div>
+        <h3>UI Query</h3>
+        <input type="text" id="queryInput" placeholder="Query">
+        <input type="text" id="propInput" placeholder="Property (optional)">
+        <button onclick="existsInDump(document.getElementById('queryInput').value, document.getElementById('propInput').value)">Check Exists in Dump</button>
+    </div>
+
+    <div>
+        <h3>Find Nearest Node</h3>
+        <input type="number" id="nodeX" placeholder="X coordinate">
+        <input type="number" id="nodeY" placeholder="Y coordinate">
+        <button onclick="findNearestNodeAtCoordinatesFromDump(document.getElementById('nodeX').value, document.getElementById('nodeY').value, document.getElementById('deviceInput').value)">Find Nearest Node</button>
+    </div>
+
+    <div>
+        <h3>App Management</h3>
+        <button onclick="listInstalledApps(document.getElementById('deviceInput').value)">List Installed Apps</button>
+        <input type="text" id="appPackageName" placeholder="App Package Name">
+        <button onclick="checkAppExists(document.getElementById('appPackageName').value, document.getElementById('deviceInput').value)">Check App Exists</button>
+        <button onclick="clearAppCache(document.getElementById('appPackageName').value, document.getElementById('deviceInput').value)">Clear App Cache</button>
+        <button onclick="openApp(document.getElementById('appPackageName').value, document.getElementById('deviceInput').value)">Open App</button>
+        <input type="text" id="appPath" placeholder="App Path">
+        <button onclick="installApp(document.getElementById('appPath').value, document.getElementById('deviceInput').value)">Install App</button>
+    </div>
+
+    <div>
+        <h3>Device Info</h3>
+        <button onclick="getBatteryDetails(document.getElementById('deviceInput').value)">Get Battery Details</button>
+    </div>
+
+    <div>
+        <h3>Service Check</h3>
+        <input type="text" id="serviceInput" placeholder="Service Name">
+        <button onclick="serviceCheck(document.getElementById('serviceInput').value, document.getElementById('deviceInput').value)">Check Service</button>
+    </div>
+
+    <div>
+        <h3>Find Node by XPath</h3>
+        <input type="text" id="xpathInput" placeholder="XPath">
+        <button onclick="findNodeByXPath(document.getElementById('xpathInput').value, document.getElementById('deviceInput').value)">Find Node by XPath</button>
+    </div>
+
+    <div>
+        <h3>Get Current Input Text</h3>
+        <button onclick="getCurrentInputText(document.getElementById('deviceInput').value)">Get Current Input Text</button>
+        <input type="text" id="currentTextInput" placeholder="Current Text (optional)">
+        <button onclick="clearCurrentInput(document.getElementById('deviceInput').value, document.getElementById('currentTextInput').value)">Clear Current Input</button>
+    </div>
+
+    <div>
+        <h3>Output</h3>
+        <pre id="output"></pre>
+    </div>
+</body>
+</html>
