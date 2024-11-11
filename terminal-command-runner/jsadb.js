@@ -17,6 +17,7 @@ const { exec } = require("child_process");
 const fs = require("fs");
 const readline = require("readline");
 const { DOMParser } = require('xmldom');
+const charEvents = require('./char-events.json').char_events;
 
 class JSADB {
     constructor() {
@@ -53,36 +54,53 @@ class JSADB {
         let decodedText = decodeURIComponent(text);
         decodedText = decodedText.replace(/"/g, '\\"'); // Escape double quotes
 
-        let command = 'shell input';
+        // Split text into chunks that can be typed normally vs special characters
+        let chunks = [];
+        let currentText = '';
+
         for (let i = 0; i < decodedText.length; i++) {
             const char = decodedText[i];
-            let keyCode;
             
+            // Handle special characters that need keyevents
             if (char === '\n') {
-                keyCode = '66';
+                if (currentText) {
+                    chunks.push({ type: 'text', content: currentText });
+                    currentText = '';
+                }
+                chunks.push({ type: 'keyevent', content: 'KEYCODE_ENTER' });
             } else if (char === ' ') {
-                keyCode = 'KEYCODE_SPACE';
-            } else if (/[a-z]/i.test(char)) {
-                keyCode = `KEYCODE_${char.toUpperCase()}`;
-            } else if (/[0-9]/.test(char)) {
-                keyCode = `KEYCODE_${char}`;
+                if (currentText) {
+                    chunks.push({ type: 'text', content: currentText });
+                    currentText = '';
+                }
+                chunks.push({ type: 'keyevent', content: 'KEYCODE_SPACE' });
             } else {
-                // For special characters, use text input
-                command += ` text "${char}"`;
-                continue;
+                currentText += char;
             }
-
-            command += ` keyevent ${keyCode}`;
         }
 
-        return this.executeAdbCommand(command, device);
+        // Add any remaining text
+        if (currentText) {
+            chunks.push({ type: 'text', content: currentText });
+        }
+
+        // Execute each chunk in sequence
+        for (const chunk of chunks) {
+            if (chunk.type === 'text') {
+                await this.executeAdbCommand(`shell input text "${chunk.content}"`, device);
+            } else if (chunk.type === 'keyevent') {
+                await this.executeAdbCommand(`shell input keyevent ${chunk.content}`, device);
+            }
+        }
+
+        return Promise.resolve();
     }
 
     screenshot(device) {
         return new Promise((resolve, reject) => {
             const timestamp = new Date().toISOString().replace(/[:.-]/g, '_');
             const filename = `${device}_${timestamp}.png`;
-            this.executeAdbCommand(`shell screencap -p /sdcard/${filename} && adb pull /sdcard/${filename}`, device)
+            this.executeAdbCommand(`shell screencap -p /sdcard/${filename} && adb -s ${device} pull /sdcard/${filename}`, device)
                 .then(() => {
                     fs.readFile(filename, (err, data) => {
                         if (err) {
@@ -434,4 +452,5 @@ class JSADB {
     }
 }
 
+module.exports = JSADB;
 module.exports = JSADB;
