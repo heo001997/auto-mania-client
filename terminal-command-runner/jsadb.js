@@ -18,6 +18,10 @@ const fs = require("fs");
 const readline = require("readline");
 const { DOMParser } = require('xmldom');
 const charEvents = require('./char-events.json').char_events;
+const path = require('path');
+const util = require('util');
+const readdir = util.promisify(fs.readdir);
+const stat = util.promisify(fs.stat);
 
 class JSADB {
     constructor() {
@@ -450,7 +454,102 @@ class JSADB {
     screenAwakeOff(device) {
         return this.executeAdbCommand('shell svc power stayon false', device);
     }
+
+    async listPaths(dirPath) {
+        try {
+            // Handle empty or invalid paths
+            if (!dirPath) {
+                throw new Error('Directory path is required');
+            }
+
+            // Normalize the path for cross-platform compatibility
+            const normalizedPath = path.normalize(dirPath).replace(/\\/g, '/');
+            
+            // Check if path exists
+            try {
+                await stat(normalizedPath);
+            } catch (error) {
+                throw new Error(`Path does not exist: ${normalizedPath}`);
+            }
+
+            // Get all files and folders in the directory
+            const items = await readdir(normalizedPath);
+            
+            // Get detailed information for each item
+            const itemDetails = await Promise.all(
+                items.map(async item => {
+                    const fullPath = path.join(normalizedPath, item).replace(/\\/g, '/');
+                    try {
+                        const stats = await stat(fullPath);
+                        return {
+                            name: item,
+                            path: fullPath,
+                            isDirectory: stats.isDirectory(),
+                            size: stats.size,
+                            created: stats.birthtime,
+                            modified: stats.mtime,
+                            accessed: stats.atime,
+                            permissions: stats.mode
+                        };
+                    } catch (error) {
+                        console.warn(`Failed to get stats for ${fullPath}:`, error);
+                        return null;
+                    }
+                })
+            );
+
+            // Filter out any null entries from failed stats
+            const validItems = itemDetails.filter(item => item !== null);
+
+            return {
+                success: true,
+                path: normalizedPath,
+                items: validItems
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message,
+                path: dirPath
+            };
+        }
+    }
+
+    async uploadFile(clientPath, mobilePath, device) {
+        // clientPath, mobilePath, device
+        if (!clientPath) {
+            throw new Error('Local file path is required');
+        }
+
+        // Default remote path to /sdcard/Downloads/AutoMania if not specified
+        const targetPath = mobilePath || '/sdcard/Download/AutoMania';
+
+        try {
+            // Check if local file exists
+            await fs.promises.access(clientPath, fs.constants.F_OK);
+            
+            // Create AutoMania directory if it doesn't exist
+            await this.executeAdbCommand(`shell mkdir -p ${targetPath}`, device);
+            
+            // Get file name from path
+            const fileName = path.basename(clientPath);
+            
+            // Construct full remote path
+            const fullmobilePath = path.join(targetPath, fileName).replace(/\\/g, '/');
+            
+            // Execute push command
+            const result = await this.executeAdbCommand(`push "${clientPath}" "${fullmobilePath}"`, device);
+            
+            return {
+                success: true,
+                clientPath,
+                mobilePath: fullmobilePath,
+                result
+            };
+        } catch (error) {
+            throw new Error(`Failed to upload file: ${error.message}`);
+        }
+    }
 }
 
-module.exports = JSADB;
 module.exports = JSADB;

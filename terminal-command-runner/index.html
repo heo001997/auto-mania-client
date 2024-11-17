@@ -4,12 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terminal Command Runner</title>
+    <script src="config.js"></script>
     <script>
         // Function to run command
         function runCommand() {
             const command = encodeURIComponent(document.getElementById('command').value);
             const device = encodeURIComponent(document.getElementById('deviceInput').value);
-            fetch(`http://localhost:7173/run-command?command=${command}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/run-command?command=${command}&device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -22,7 +23,7 @@
         
         // Function to get device list
         function getDeviceList() {
-            fetch('http://localhost:7173/get-device-list')
+            fetch(`http://localhost:${config.PORT}/get-device-list`)
                 .then(response => response.json())
                 .then(devices => {
                     document.getElementById('output').innerText = devices.join('\n');
@@ -34,7 +35,7 @@
         }
 
         function tap(x, y, device) {
-            fetch(`http://localhost:7173/tap?x=${x}&y=${y}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/tap?x=${x}&y=${y}&device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -46,7 +47,7 @@
         }
 
         function swipe(xPoint1, yPoint1, xPoint2, yPoint2, durationInMs, device) {
-            fetch(`http://localhost:7173/swipe?xPoint1=${xPoint1}&yPoint1=${yPoint1}&xPoint2=${xPoint2}&yPoint2=${yPoint2}&durationInMs=${durationInMs}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/swipe?xPoint1=${xPoint1}&yPoint1=${yPoint1}&xPoint2=${xPoint2}&yPoint2=${yPoint2}&durationInMs=${durationInMs}&device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -58,7 +59,7 @@
         }
 
         function typeText(text, device) {
-            fetch(`http://localhost:7173/type?text=${encodeURIComponent(text)}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/type?text=${encodeURIComponent(text)}&device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -70,7 +71,7 @@
         }
 
         function takeScreenshot(device) {
-            fetch(`http://localhost:7173/screenshot?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/screenshot?device=${device}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -89,7 +90,7 @@
         }
 
         function dumpWindowXML(device) {
-            fetch(`http://localhost:7173/dump-window-xml?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/dump-window-xml?device=${device}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -112,7 +113,7 @@
         }
 
         function findNearestNodeAtCoordinatesFromDump(x, y, device) {
-            fetch(`http://localhost:7173/find-nearest-node?x=${x}&y=${y}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/find-nearest-node?x=${x}&y=${y}&device=${device}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -162,7 +163,7 @@
         }
 
         function existsInDump(query, prop) {
-            fetch(`http://localhost:7173/exists-in-dump?query=${encodeURIComponent(query)}&prop=${encodeURIComponent(prop)}`)
+            fetch(`http://localhost:${config.PORT}/exists-in-dump?query=${encodeURIComponent(query)}&prop=${encodeURIComponent(prop)}`)
             .then(response => response.json())
             .then(result => {
                 document.getElementById('output').innerText = result ? 'Exists' : 'Does not exist';
@@ -174,7 +175,7 @@
         }
 
         function getResolution(device) {
-            fetch(`http://localhost:7173/get-resolution?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/get-resolution?device=${device}`)
             .then(response => response.json())
             .then(resolution => {
                 document.getElementById('output').innerText = `Width: ${resolution.width}, Height: ${resolution.height}`;
@@ -186,7 +187,7 @@
         }
 
         function listInstalledApps(device) {
-            fetch(`http://localhost:7173/list-installed-apps?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/list-installed-apps?device=${device}`)
             .then(response => response.json())
             .then(apps => {
                 document.getElementById('output').innerText = apps.result.join('\n');
@@ -198,7 +199,7 @@
         }
 
         function checkAppExists(appPackageName, device) {
-            fetch(`http://localhost:7173/app-exists?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/app-exists?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
             .then(response => response.json())
             .then(exists => {
                 document.getElementById('output').innerText = exists ? 'App exists' : 'App does not exist';
@@ -210,7 +211,7 @@
         }
 
         function clearAppCache(appPackageName, device) {
-            fetch(`http://localhost:7173/clear-app-cache?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/clear-app-cache?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -222,7 +223,7 @@
         }
 
         function openApp(appPackageName, device) {
-            fetch(`http://localhost:7173/open-app?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/open-app?appPackageName=${encodeURIComponent(appPackageName)}&device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -234,7 +235,7 @@
         }
 
         function installApp(appPath, device) {
-            fetch(`http://localhost:7173/install-app?appPath=${encodeURIComponent(appPath)}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/install-app?appPath=${encodeURIComponent(appPath)}&device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -246,7 +247,7 @@
         }
 
         function goToHome(device) {
-            fetch(`http://localhost:7173/go-to-home?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/go-to-home?device=${device}`)
             .then(response => response.text())
             .then(output => {
                 document.getElementById('output').innerText = output;
@@ -258,7 +259,7 @@
         }
 
         function connectDevice(device) {
-            fetch(`http://localhost:7173/connect-device?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/connect-device?device=${device}`)
             .then(response => response.json())
             .then(connected => {
                 document.getElementById('output').innerText = connected ? 'Device connected' : 'Failed to connect device';
@@ -270,7 +271,7 @@
         }
 
         function getBatteryDetails(device) {
-            fetch(`http://localhost:7173/get-battery-details?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/get-battery-details?device=${device}`)
             .then(response => response.json())
             .then(details => {
                 document.getElementById('output').innerText = JSON.stringify(details, null, 2);
@@ -282,7 +283,7 @@
         }
 
         function serviceCheck(service, device) {
-            fetch(`http://localhost:7173/service-check?service=${encodeURIComponent(service)}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/service-check?service=${encodeURIComponent(service)}&device=${device}`)
             .then(response => response.json())
             .then(exists => {
                 document.getElementById('output').innerText = exists ? 'Service exists' : 'Service does not exist';
@@ -294,7 +295,7 @@
         }
 
         function findNodeByXPath(xpath, device) {
-            fetch(`http://localhost:7173/find-node-by-xpath?xpath=${encodeURIComponent(xpath)}&device=${device}`)
+            fetch(`http://localhost:${config.PORT}/find-node-by-xpath?xpath=${encodeURIComponent(xpath)}&device=${device}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -316,7 +317,7 @@
         }
 
         function getCurrentInputText(device) {
-            fetch(`http://localhost:7173/get-current-input-text?device=${device}`)
+            fetch(`http://localhost:${config.PORT}/get-current-input-text?device=${device}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -332,7 +333,7 @@
         }
 
         function clearCurrentInput(device, currentText = '') {
-            const url = new URL('http://localhost:7173/clear-current-input');
+            const url = new URL('http://localhost:${config.PORT}/clear-current-input');
             url.searchParams.append('device', device);
             if (currentText) {
                 url.searchParams.append('currentText', currentText);
@@ -354,7 +355,7 @@
         }
 
         function screenAwake(device, isOn) {
-            fetch(`http://localhost:7173/screen-awake?device=${device}&isOn=${isOn}`)
+            fetch(`http://localhost:${config.PORT}/screen-awake?device=${device}&isOn=${isOn}`)
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
@@ -375,6 +376,86 @@
             const button = document.getElementById('screenAwakeToggle');
             const isCurrentlyOn = button.innerText === 'Turn Off Keep Screen On';
             screenAwake(device, !isCurrentlyOn);
+        }
+
+        function listPaths(path) {
+            fetch(`http://localhost:${config.PORT}/list-paths?path=${encodeURIComponent(path)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        const items = data.result.items;
+                        let output = `Directory: ${data.result.path}\n\n`;
+                        
+                        // Sort items: directories first, then files
+                        items.sort((a, b) => {
+                            if (a.isDirectory === b.isDirectory) {
+                                return a.name.localeCompare(b.name);
+                            }
+                            return a.isDirectory ? -1 : 1;
+                        });
+
+                        items.forEach(item => {
+                            const type = item.isDirectory ? 'Directory' : 'File';
+                            const size = item.isDirectory ? '-' : formatFileSize(item.size);
+                            output += `${item.name}\n`;
+                            output += `  Type: ${type}\n`;
+                            output += `  Size: ${size}\n`;
+                            output += `  Modified: ${new Date(item.modified).toLocaleString()}\n\n`;
+                        });
+
+                        document.getElementById('output').innerText = output;
+                    } else {
+                        document.getElementById('output').innerText = 'Error: ' + data.error;
+                    }
+                })
+                .catch(error => {
+                    alert('Failed to list files');
+                    console.error('Error:', error);
+                });
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function uploadFile() {
+            const clientPath = document.getElementById('uploadClientPath').value;
+            const mobilePath = document.getElementById('uploadMobilePath').value;
+            const device = document.getElementById('deviceInput').value;
+
+            if (!clientPath) {
+                alert('Please provide a client file path');
+                return;
+            }
+
+            fetch(`http://localhost:${config.PORT}/upload-file`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    clientPath,
+                    mobilePath,
+                    device
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    document.getElementById('output').innerText = 
+                        `File uploaded successfully!\nFrom: ${data.result.clientPath}\nTo: ${data.result.mobilePath}`;
+                } else {
+                    document.getElementById('output').innerText = `Upload failed: ${data.error}`;
+                }
+            })
+            .catch(error => {
+                alert('Failed to upload file');
+                console.error('Error:', error);
+            });
         }
     </script>
 </head>
@@ -470,6 +551,19 @@
         <button onclick="getCurrentInputText(document.getElementById('deviceInput').value)">Get Current Input Text</button>
         <input type="text" id="currentTextInput" placeholder="Current Text (optional)">
         <button onclick="clearCurrentInput(document.getElementById('deviceInput').value, document.getElementById('currentTextInput').value)">Clear Current Input</button>
+    </div>
+
+    <div>
+        <h3>File System</h3>
+        <input type="text" id="pathInput" placeholder="Enter path" style="width: 300px;">
+        <button onclick="listPaths(document.getElementById('pathInput').value)">List Files</button>
+    </div>
+
+    <div>
+        <h3>File Upload</h3>
+        <input type="text" id="uploadClientPath" placeholder="Client file path" style="width: 300px;">
+        <input type="text" id="uploadMobilePath" placeholder="Mobile path (optional, defaults to /sdcard/Download/AutoMania)" style="width: 300px;">
+        <button onclick="uploadFile()">Upload File</button>
     </div>
 
     <div>

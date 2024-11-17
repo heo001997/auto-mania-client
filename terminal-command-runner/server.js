@@ -4,13 +4,15 @@ const bodyParser = require('body-parser');
 const { exec } = require('child_process');
 const JSADB = require('./jsadb');
 const jsadb = new JSADB();
+const config = require('./config');
 
 const app = express();
-const PORT = 9744;
+const PORT = config.PORT;
 
 // Middleware
 app.use(cors());
 app.use(bodyParser.json());
+app.use(express.static(__dirname));
 
 // Route to execute terminal commands
 app.get('/run-command', async (req, res) => {
@@ -293,6 +295,46 @@ app.get('/turn-off-screen-stay-on', async (req, res) => {
         res.status(200).json({ success: true, result });
     } catch (error) {
         res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// List Files and Folders
+app.get('/list-paths', async (req, res) => {
+    const { path } = req.query;
+    if (!path) {
+        return res.status(400).json({ 
+            success: false, 
+            error: 'Path parameter is required' 
+        });
+    }
+
+    try {
+        const result = await jsadb.listPaths(decodeURIComponent(path));
+        res.status(200).json({ success: true, result });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+// Upload File
+app.post('/upload-file', async (req, res) => {
+    const { clientPath, mobilePath, device } = req.body;
+    
+    if (!clientPath) {
+        return res.status(400).json({
+            success: false,
+            error: 'Client file path is required'
+        });
+    }
+
+    try {
+        const result = await jsadb.uploadFile(clientPath, mobilePath, device);
+        res.status(200).json({ success: true, result });
+    } catch (error) {
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
     }
 });
 
